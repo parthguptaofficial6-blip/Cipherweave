@@ -3,6 +3,7 @@ import Navbar from './components/Navbar';
 import CaseList from './components/CaseList';
 import CaseDetail from './components/CaseDetail';
 import Login from './components/Login';
+import DashboardStats from './components/DashboardStats';
 
 // Use host port 8000 matching Docker Compose, with configure override.
 const API_BASE = import.meta.env.VITE_API_BASE || "http://127.0.0.1:8000";
@@ -167,22 +168,26 @@ export default function App() {
         onLogout={handleLogout}
       />
 
-      <main className="max-w-7xl w-full mx-auto p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1 mt-4">
-        {/* Left column: Case Checklist */}
-        <CaseList
-          cases={cases}
-          selectedCaseId={selectedCaseId}
-          onSelectCase={loadCaseDetail}
-          hasSimulated={hasSimulated}
-        />
+      <main className="max-w-7xl w-full mx-auto p-4 sm:p-6 flex-1 mt-4">
+        <DashboardStats apiBase={API_BASE} token={token} />
+        
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Left column: Case Checklist */}
+          <CaseList
+            cases={cases}
+            selectedCaseId={selectedCaseId}
+            onSelectCase={loadCaseDetail}
+            hasSimulated={hasSimulated}
+          />
 
-        {/* Right column: Incident Details & Event Timeline */}
-        <CaseDetail
-          caseData={selectedCaseDetails}
-          isLoadingDetail={isLoadingDetail}
-          onTakeAction={takeAction}
-          isTakingAction={isTakingAction}
-        />
+          {/* Right column: Incident Details & Event Timeline */}
+          <CaseDetail
+            caseData={selectedCaseDetails}
+            isLoadingDetail={isLoadingDetail}
+            onTakeAction={takeAction}
+            isTakingAction={isTakingAction}
+          />
+        </div>
       </main>
     </div>
   );

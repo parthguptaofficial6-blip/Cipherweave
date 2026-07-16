@@ -96,8 +96,8 @@ export default function Timeline({ cyberEvents = [], transactionEvents = [] }) {
 
                 {/* Timeline Circle Bullet */}
                 <div
-                  className={`z-20 flex items-center justify-center order-1 w-8 h-8 rounded-full border-2 bg-slate-950 shadow-xl transition-all duration-300 hover:scale-115 ${
-                    isCyber ? 'border-teal-500 text-teal-400' : 'border-indigo-500 text-indigo-450'
+                  className={`z-20 flex items-center justify-center order-1 w-8 h-8 rounded-full border-2 bg-slate-950 shadow-[0_0_15px_currentColor] transition-all duration-300 hover:scale-125 ${
+                    isCyber ? 'border-teal-500 text-teal-400' : 'border-indigo-500 text-indigo-400'
                   }`}
                 >
                   {isCyber ? (

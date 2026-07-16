@@ -19,7 +19,11 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 120  # 2 hours
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
+    try:
+        return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
+    except ValueError:
+        # Invalid hash format (e.g. from manual DB edits or corrupted data)
+        return False
 
 def get_password_hash(password: str) -> str:
     salt = bcrypt.gensalt()

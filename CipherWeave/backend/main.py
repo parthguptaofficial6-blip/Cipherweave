@@ -55,7 +55,17 @@ def seed_admin_user():
 @app.post("/token")
 def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     user = db.query(models.User).filter(models.User.username == form_data.username).first()
-    if not user or not verify_password(form_data.password, user.hashed_password):
+    
+    if not user or not user.hashed_password:
+        # Hash a dummy password to equalize response time and prevent timing attacks
+        get_password_hash(form_data.password)
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+        
+    if not verify_password(form_data.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",
@@ -95,18 +105,42 @@ def get_case(case_id: int, db: Session = Depends(get_db), current_user: models.U
         "transaction_events": txn_events
     }
 
+@app.get("/stats")
+def get_stats(db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
+    cases = db.query(models.Case).all()
+    total_cases = len(cases)
+    high_risk_cases = len([c for c in cases if c.risk_score > 70])
+    quantum_threats = len([c for c in cases if c.quantum_risk])
+    escalated_cases = len([c for c in cases if c.status == "escalate" or c.status == "escalated"])
+    
+    return {
+        "total_cases": total_cases,
+        "high_risk_cases": high_risk_cases,
+        "quantum_threats": quantum_threats,
+        "escalated_cases": escalated_cases
+    }
+
 class ActionRequest(BaseModel):
     action: str # 'escalate', 'dismiss', 'false_positive'
 
 @app.post("/cases/{case_id}/action")
 def take_action(case_id: int, req: ActionRequest, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
+    valid_actions = {
+        "escalate": "escalated",
+        "dismiss": "dismissed",
+        "false_positive": "false_positive"
+    }
+    
+    if req.action not in valid_actions:
+        raise HTTPException(status_code=400, detail="Invalid action")
+        
     case = db.query(models.Case).filter(models.Case.id == case_id).first()
     if not case:
         raise HTTPException(status_code=404, detail="Case not found")
         
-    case.status = req.action
+    case.status = valid_actions[req.action]
     feedback = models.Feedback(case_id=case_id, action=req.action)
     db.add(feedback)
     db.commit()
     
-    return {"status": "success", "action_recorded": req.action}
+    return {"status": "success", "action_recorded": req.action, "new_status": case.status}

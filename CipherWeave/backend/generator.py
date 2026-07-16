@@ -1,5 +1,6 @@
 import random
 import uuid
+import string
 from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
 from models import CyberEvent, TransactionEvent, Case, Feedback
@@ -11,7 +12,7 @@ CIPHER_SUITES = ["TLS_AES_256_GCM_SHA384", "TLS_CHACHA20_POLY1305_SHA256", "TLS_
 WEAK_CIPHERS = ["TLS_RSA_WITH_AES_128_CBC_SHA"]
 
 def generate_ip():
-    return f"{random.randint(1, 255)}.{random.randint(0, 255)}.{random.randint(0, 255)}.{random.randint(0, 255)}"
+    return f"{random.randint(11, 250)}.{random.randint(0, 255)}.{random.randint(0, 255)}.{random.randint(1, 254)}"
 
 def generate_geo():
     return random.choice(["US", "UK", "IN", "SG", "AU", "RU", "CN", "KP"])
@@ -27,7 +28,9 @@ def generate_synthetic_data(db: Session, num_entities=50):
     base_time = datetime.utcnow() - timedelta(days=1)
 
     for i in range(num_entities):
-        entity_id = f"CUST_{1000 + i}"
+        prefix = random.choice(["CORP", "ENT", "SYS", "USR"])
+        suffix = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
+        entity_id = f"{prefix}-{suffix}"
         device_id = str(uuid.uuid4())
         
         scenario = random.choices(["benign", "fraud", "quantum"], weights=[0.8, 0.1, 0.1])[0]
@@ -54,8 +57,8 @@ def generate_synthetic_data(db: Session, num_entities=50):
                     timestamp=base_time + time_offset,
                     entity_id=entity_id,
                     transaction_type=random.choice(["UPI", "card_swipe", "NEFT"]),
-                    amount=round(random.uniform(10.0, 500.0), 2),
-                    beneficiary=f"BENEF_{random.randint(100, 999)}",
+                    amount=round(random.uniform(50.0, 5000.0), 2),
+                    beneficiary=f"VENDOR_{random.randint(1000, 9999)}",
                     channel=random.choice(["mobile", "web"]),
                     geo=random.choice(["US", "UK", "IN"])
                 )
@@ -80,8 +83,8 @@ def generate_synthetic_data(db: Session, num_entities=50):
                 timestamp=base_time + time_offset + timedelta(minutes=random.randint(2, 10)),
                 entity_id=entity_id,
                 transaction_type="wire_transfer",
-                amount=round(random.uniform(50000.0, 250000.0), 2),
-                beneficiary="OFFSHORE_ACC_999",
+                amount=round(random.uniform(150000.0, 950000.0), 2),
+                beneficiary="SHELL_CORP_OFFSHORE",
                 channel="web",
                 geo=random.choice(["RU", "KP"])
             )
@@ -108,8 +111,8 @@ def generate_synthetic_data(db: Session, num_entities=50):
                     timestamp=base_time + time_offset + timedelta(minutes=random.randint(60, 300)),
                     entity_id=entity_id,
                     transaction_type="card_swipe",
-                    amount=round(random.uniform(5.0, 50.0), 2),
-                    beneficiary="LOCAL_CAFE",
+                    amount=round(random.uniform(1.0, 10.0), 2),
+                    beneficiary="TEST_PING_TXN",
                     channel="atm",
                     geo=cyber.geo
                 )

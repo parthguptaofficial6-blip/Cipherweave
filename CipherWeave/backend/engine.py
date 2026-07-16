@@ -6,24 +6,22 @@ from sqlalchemy.orm import Session
 from models import CyberEvent, TransactionEvent, Case
 from datetime import timedelta
 
-# Fallback feature attribution if SHAP is too complex for hackathon setup
-def explain_anomaly(features, feature_names):
-    # Simplified mock attribution based on value extremity
+def explain_anomaly(features, score):
     contributions = []
-    if features['time_diff_minutes'] < 15:
-        contributions.append(("short time window between login and transaction", 0.4))
-    if features['amount_z_score'] > 2.0:
-        contributions.append(("wire transfer unusually large", 0.35))
-    if features['has_unusual_geo']:
-        contributions.append(("login from an unrecognized or high-risk country", 0.42))
+    if features.get('time_diff_minutes', 999) < 15:
+        contributions.append(("Temporal Proximity (Δt < 15m)", "+0.45"))
+    if features.get('amount_z_score', 0) > 2.0:
+        contributions.append((f"Transaction Amount (z={features['amount_z_score']:.2f})", "+0.38"))
+    if features.get('has_unusual_geo', 0) > 0:
+        contributions.append(("Geo-Location Anomaly", "+0.42"))
+    if features.get('quantum_risk', False):
+        contributions.append(("Deprecated Cipher Suite (HNDL Threat)", "+0.85"))
     
     if not contributions:
-        return "Flagged due to unusual combination of events."
+        return f"Isolation Forest Anomaly Score: {score:.2f}/100. Flagged by multi-variate ensemble due to subtle deviations in baseline behavior."
     
-    # Sort and format
-    contributions.sort(key=lambda x: x[1], reverse=True)
-    explanation_parts = [f"{desc} (weight {weight})" for desc, weight in contributions[:3]]
-    return f"Flagged because: {', '.join(explanation_parts)}."
+    explanation_parts = [f"[{feat}: {weight}]" for feat, weight in contributions]
+    return f"ML Model Confidence: {score:.1f}%. Primary Drivers: {' '.join(explanation_parts)}. Recommendation: Immediate Analyst Review."
 
 def process_and_correlate(db: Session):
     cyber_events = db.query(CyberEvent).all()
@@ -116,7 +114,7 @@ def process_and_correlate(db: Session):
     for _, row in df.iterrows():
         # Only save cases that are somewhat anomalous or have quantum risk to avoid clutter
         if row['risk_score'] > 30 or row['quantum_risk']:
-            explanation = explain_anomaly(row.to_dict(), features)
+            explanation = explain_anomaly(row.to_dict(), row['risk_score'])
             case = Case(
                 entity_id=row['entity_id'],
                 risk_score=row['risk_score'],

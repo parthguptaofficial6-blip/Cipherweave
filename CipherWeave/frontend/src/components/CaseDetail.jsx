@@ -1,7 +1,7 @@
 import React from 'react';
 import AlertBadge from './AlertBadge';
 import Timeline from './Timeline';
-import { AlertTriangle, ShieldCheck, HelpCircle, ArrowUpRight } from 'lucide-react';
+import { AlertTriangle, ShieldCheck, HelpCircle, ArrowUpRight, Activity } from 'lucide-react';
 
 export default function CaseDetail({
   caseData,
@@ -36,7 +36,11 @@ export default function CaseDetail({
 
   const { case: c, cyber_events, transaction_events } = caseData;
   const isHighRisk = c.risk_score > 70;
-  const scoreColor = isHighRisk ? 'text-red-500' : 'text-teal-400';
+  const scoreColor = isHighRisk ? 'text-red-500 text-glow-red' : 'text-teal-400 text-glow-blue';
+
+  // Get primary IPs/Vendors for graph
+  const mainIp = cyber_events?.[0]?.source_ip || 'Unknown IP';
+  const mainVendor = transaction_events?.[0]?.beneficiary || 'Unknown Node';
 
   return (
     <section className="lg:col-span-2 glass-panel rounded-xl flex flex-col h-[80vh] overflow-hidden relative">
@@ -57,7 +61,7 @@ export default function CaseDetail({
               </p>
             </div>
             
-            <div className="text-left md:text-right bg-slate-900/40 p-4 rounded-lg border border-slate-800 flex items-center gap-4 md:flex-col md:gap-1 min-w-[120px] justify-between">
+            <div className="text-left md:text-right bg-slate-900/40 p-4 rounded-lg border border-slate-800 flex items-center gap-4 md:flex-col md:gap-1 min-w-[120px] justify-between shadow-inner">
               <div>
                 <div className={`text-4xl font-black font-mono tracking-tighter ${scoreColor}`}>
                   {Math.round(c.risk_score)}
@@ -69,12 +73,54 @@ export default function CaseDetail({
             </div>
           </div>
 
+          {/* Visual Correlation Graph */}
+          <div className="mt-6 mb-2 p-4 bg-slate-950/50 rounded-xl border border-slate-800/80 relative overflow-hidden flex items-center justify-center min-h-[140px]">
+            {/* Background Grid */}
+            <div className="absolute inset-0 opacity-20 bg-[linear-gradient(rgba(255,255,255,0.1)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.1)_1px,transparent_1px)] bg-[size:20px_20px]"></div>
+            
+            <div className="flex items-center gap-4 z-10 w-full max-w-lg justify-between px-4">
+              {/* Node 1: Threat Actor */}
+              <div className="flex flex-col items-center">
+                <div className="w-12 h-12 rounded-full bg-slate-800 border-2 border-red-500/50 shadow-[0_0_15px_rgba(239,68,68,0.3)] flex items-center justify-center z-10">
+                  <Activity className="w-5 h-5 text-red-400" />
+                </div>
+                <span className="text-[10px] text-slate-400 mt-2 font-mono bg-slate-900 px-2 py-0.5 rounded">{mainIp}</span>
+              </div>
+              
+              {/* Connection Line */}
+              <div className="flex-1 h-0.5 bg-gradient-to-r from-red-500/50 via-slate-600 to-indigo-500/50 relative -mt-6">
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-slate-900 text-[9px] px-2 text-slate-500 uppercase tracking-widest border border-slate-800 rounded">Correlated</div>
+              </div>
+
+              {/* Node 2: Entity */}
+              <div className="flex flex-col items-center">
+                <div className="w-14 h-14 rounded-xl bg-slate-800 border-2 border-indigo-500/50 shadow-[0_0_15px_rgba(99,102,241,0.3)] flex items-center justify-center z-10">
+                  <ShieldCheck className="w-6 h-6 text-indigo-400" />
+                </div>
+                <span className="text-[10px] text-indigo-300 mt-2 font-mono font-bold bg-indigo-900/30 px-2 py-0.5 rounded">{c.entity_id}</span>
+              </div>
+
+              {/* Connection Line */}
+              <div className="flex-1 h-0.5 bg-gradient-to-r from-indigo-500/50 via-slate-600 to-teal-500/50 relative -mt-6"></div>
+
+              {/* Node 3: Target */}
+              <div className="flex flex-col items-center">
+                <div className="w-12 h-12 rounded-full bg-slate-800 border-2 border-teal-500/50 shadow-[0_0_15px_rgba(20,184,166,0.3)] flex items-center justify-center z-10">
+                  <ArrowUpRight className="w-5 h-5 text-teal-400" />
+                </div>
+                <span className="text-[10px] text-slate-400 mt-2 font-mono bg-slate-900 px-2 py-0.5 rounded truncate max-w-[80px] block" title={mainVendor}>{mainVendor}</span>
+              </div>
+            </div>
+          </div>
+
           {/* Quantum Risk Warning Banner */}
           {c.quantum_risk && (
-            <div className="mt-5 p-3.5 bg-amber-500/10 border border-amber-500/30 rounded-lg text-amber-400 flex items-start gap-3 animate-pulse">
-              <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
-              <div className="text-xs">
-                <strong className="font-bold">Quantum Threat Flagged:</strong> Harvest-Now, Decrypt-Later (HNDL) indicators present. Anomaly includes high exfiltration volume over standard port paired with deprecated cryptography suites.
+            <div className="mt-5 p-4 bg-slate-900 border border-amber-500/60 rounded-xl text-amber-400 flex items-start gap-4 animate-pulse-slow shadow-[0_0_25px_rgba(245,158,11,0.15)] relative overflow-hidden">
+              <div className="absolute inset-0 bg-amber-500/5 backdrop-blur-sm pointer-events-none"></div>
+              <AlertTriangle className="w-6 h-6 text-amber-500 shrink-0 mt-0.5 relative z-10" />
+              <div className="text-sm relative z-10">
+                <strong className="font-black tracking-wide uppercase text-amber-500 block mb-1">Critical: Quantum Threat Flagged</strong> 
+                <span className="text-slate-300">Harvest-Now, Decrypt-Later (HNDL) indicators detected. Anomaly includes high exfiltration volume paired with deprecated RSA/CBC cryptography suites.</span>
               </div>
             </div>
           )}
